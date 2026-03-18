@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sorting Algorithm Visualizer</title>
+<style>
+  :root {
+    --color-background-primary: #ffffff;
+    --color-background-secondary: #f5f5f4;
+    --color-text-primary: #1c1917;
+    --color-text-secondary: #57534e;
+    --color-text-tertiary: #a8a29e;
+    --color-border-secondary: #d6d3d1;
+    --color-border-tertiary: #e7e5e4;
+    --color-text-info: #185fa5;
+    --color-background-info: #e6f1fb;
+    --color-text-danger: #a32d2d;
+    --color-background-danger: #fcebeb;
+    --color-border-danger: #f09595;
+    --color-text-warning: #854f0b;
+    --color-background-warning: #faeeda;
+    --border-radius-md: 8px;
+    --border-radius-lg: 12px;
+    --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --color-background-primary: #1c1917;
+      --color-background-secondary: #292524;
+      --color-text-primary: #e7e5e4;
+      --color-text-secondary: #a8a29e;
+      --color-text-tertiary: #78716c;
+      --color-border-secondary: #57534e;
+      --color-border-tertiary: #44403c;
+      --color-text-info: #85b7eb;
+      --color-background-info: #0c2a4a;
+      --color-text-danger: #f09595;
+      --color-background-danger: #501313;
+      --color-border-danger: #791f1f;
+      --color-text-warning: #fac775;
+      --color-background-warning: #412402;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font-sans); background: var(--color-background-primary); color: var(--color-text-primary); padding: 2rem; max-width: 720px; margin: 0 auto; }
+  button { background: transparent; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); padding: 8px 16px; font-size: 14px; color: var(--color-text-primary); cursor: pointer; font-family: var(--font-sans); transition: all 0.15s; }
+  button:hover { background: var(--color-background-secondary); }
+  button:active { transform: scale(0.98); }
+  input[type="range"] { height: 4px; appearance: none; background: var(--color-border-tertiary); border-radius: 2px; outline: none; }
+  input[type="range"]::-webkit-slider-thumb { appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--color-background-primary); border: 1.5px solid var(--color-border-secondary); cursor: pointer; }
+  .algo-btn.active { border-color: var(--color-text-info) !important; color: var(--color-text-info) !important; background: var(--color-background-info) !important; }
+  .algo-btn.bogo { border-color: var(--color-border-danger) !important; }
+  .algo-btn.bogo.active { border-color: var(--color-text-danger) !important; color: var(--color-text-danger) !important; background: var(--color-background-danger) !important; }
+  .bar-container { display: flex; align-items: flex-end; gap: 2px; height: 220px; padding: 0; }
+  .bar { transition: height 0.08s ease, background 0.08s ease; border-radius: 2px 2px 0 0; flex: 1; min-width: 0; }
+  .stats-row { display: flex; gap: 12px; flex-wrap: wrap; }
+  .stat-card { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 0.6rem 1rem; flex: 1; min-width: 80px; }
+  .stat-label { font-size: 12px; color: var(--color-text-tertiary); margin: 0 0 2px; }
+  .stat-value { font-size: 20px; font-weight: 500; margin: 0; color: var(--color-text-primary); }
+  .warn { font-size: 12px; color: var(--color-text-warning); background: var(--color-background-warning); padding: 6px 12px; border-radius: var(--border-radius-md); display: none; margin-top: 8px; }
+  .warn.show { display: block; }
+</style>
+</head>
+<body>
+
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin:0 0 1rem;">
+  <button class="algo-btn active" onclick="selectAlgo(0)" id="btn-0">Bubble sort</button>
+  <button class="algo-btn" onclick="selectAlgo(1)" id="btn-1">Selection sort</button>
+  <button class="algo-btn" onclick="selectAlgo(2)" id="btn-2">Insertion sort</button>
+  <button class="algo-btn" onclick="selectAlgo(3)" id="btn-3">Quick sort</button>
+  <button class="algo-btn" onclick="selectAlgo(4)" id="btn-4">Merge sort</button>
+  <button class="algo-btn bogo" onclick="selectAlgo(5)" id="btn-5">Bogosort</button>
+</div>
+
+<div class="bar-container" id="bars"></div>
+
+<div style="display:flex;align-items:center;gap:12px;margin:1rem 0;">
+  <button id="run-btn" onclick="runSort()">Run</button>
+  <button onclick="resetBars()">Shuffle</button>
+  <label style="font-size:13px;color:var(--color-text-secondary);display:flex;align-items:center;gap:6px;margin-left:auto;">
+    Speed
+    <input type="range" min="1" max="60" value="30" id="speed" style="width:100px;" step="1">
+  </label>
+  <label style="font-size:13px;color:var(--color-text-secondary);display:flex;align-items:center;gap:6px;">
+    Bars
+    <input type="range" min="3" max="80" value="40" id="count" style="width:80px;" step="1" oninput="resetBars()">
+  </label>
+</div>
+
+<div class="stats-row" style="margin-top:0.75rem;">
+  <div class="stat-card"><p class="stat-label">Comparisons</p><p class="stat-value" id="comps">0</p></div>
+  <div class="stat-card"><p class="stat-label" id="swap-label">Swaps</p><p class="stat-value" id="swaps">0</p></div>
+  <div class="stat-card"><p class="stat-label">Time</p><p class="stat-value" id="timer">0 ms</p></div>
+  <div class="stat-card"><p class="stat-label">Complexity</p><p class="stat-value" id="complexity" style="font-size:14px;">O(n²)</p></div>
+</div>
+
+<div class="warn" id="bogo-warn">Bogosort is capped at 8 bars. Above that, the expected runtime is longer than your patience. Current cap applied.</div>
+
+<script>
+const COMPLEXITY = ['O(n²)','O(n²)','O(n²)','O(n log n)','O(n log n)','O(n × n!)'];
+const SWAP_LABEL = ['Swaps','Swaps','Swaps','Swaps','Swaps','Shuffles'];
+let arr = [], algo = 0, running = false, stopFlag = false;
+let comps = 0, swapCount = 0, t0 = 0;
+const sorted = new Set();
+
+function selectAlgo(i) {
+  algo = i;
+  document.querySelectorAll('.algo-btn').forEach((b,j) => b.classList.toggle('active', j===i));
+  document.getElementById('complexity').textContent = COMPLEXITY[i];
+  document.getElementById('swap-label').textContent = SWAP_LABEL[i];
+  document.getElementById('bogo-warn').classList.toggle('show', i===5 && parseInt(document.getElementById('count').value) > 8);
+  if (!running) resetBars();
+}
+
+function resetBars() {
+  stopFlag = true; running = false;
+  let n = parseInt(document.getElementById('count').value);
+  if (algo === 5 && n > 8) n = 8;
+  document.getElementById('bogo-warn').classList.toggle('show', algo===5 && parseInt(document.getElementById('count').value) > 8);
+  arr = Array.from({length:n}, (_,i) => i+1);
+  for (let i = arr.length-1; i > 0; i--) { const j = Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; }
+  comps = 0; swapCount = 0; sorted.clear();
+  document.getElementById('comps').textContent = '0';
+  document.getElementById('swaps').textContent = '0';
+  document.getElementById('timer').textContent = '0 ms';
+  document.getElementById('run-btn').textContent = 'Run';
+  render();
+}
+
+function render(active=-1, highlight=-1) {
+  const c = document.getElementById('bars');
+  const max = arr.length;
+  c.innerHTML = arr.map((v,i) => {
+    const h = (v/max)*100;
+    let bg = 'var(--color-border-secondary)';
+    if (sorted.has(i)) bg = '#5DCAA5';
+    else if (i === active) bg = '#EF9F27';
+    else if (highlight >= 0 && i <= highlight) bg = '#E24B4A';
+    return '<div class="bar" style="height:'+h+'%;background:'+bg+'"></div>';
+  }).join('');
+}
+
+function update() {
+  document.getElementById('comps').textContent = comps;
+  document.getElementById('swaps').textContent = swapCount;
+  document.getElementById('timer').textContent = Math.round(performance.now()-t0)+' ms';
+}
+
+function delay() { return new Promise(r => setTimeout(r, Math.max(1, 62 - parseInt(document.getElementById('speed').value)))); }
+
+async function bubbleSort() {
+  for (let i=0; i<arr.length && !stopFlag; i++) {
+    for (let j=0; j<arr.length-i-1 && !stopFlag; j++) {
+      comps++;
+      if (arr[j]>arr[j+1]) { [arr[j],arr[j+1]]=[arr[j+1],arr[j]]; swapCount++; }
+      render(j); update(); await delay();
+    }
+    sorted.add(arr.length-i-1);
+  }
+}
+
+async function selectionSort() {
+  for (let i=0; i<arr.length && !stopFlag; i++) {
+    let min=i;
+    for (let j=i+1; j<arr.length && !stopFlag; j++) {
+      comps++; if (arr[j]<arr[min]) min=j;
+      render(j); update(); await delay();
+    }
+    if (min!==i) { [arr[i],arr[min]]=[arr[min],arr[i]]; swapCount++; }
+    sorted.add(i);
+  }
+}
+
+async function insertionSort() {
+  sorted.add(0);
+  for (let i=1; i<arr.length && !stopFlag; i++) {
+    let key=arr[i], j=i-1;
+    while (j>=0 && arr[j]>key && !stopFlag) {
+      comps++; arr[j+1]=arr[j]; j--; swapCount++;
+      render(j+1); update(); await delay();
+    }
+    comps++; arr[j+1]=key; sorted.add(i);
+    render(i); update();
+  }
+}
+
+async function quickSort(lo, hi) {
+  if (lo >= hi || stopFlag) { if (lo===hi) sorted.add(lo); return; }
+  let pivot=arr[hi], i=lo;
+  for (let j=lo; j<hi && !stopFlag; j++) {
+    comps++;
+    if (arr[j]<pivot) { [arr[i],arr[j]]=[arr[j],arr[i]]; swapCount++; i++; }
+    render(j); update(); await delay();
+  }
+  [arr[i],arr[hi]]=[arr[hi],arr[i]]; swapCount++;
+  sorted.add(i);
+  render(i); update(); await delay();
+  await quickSort(lo, i-1);
+  await quickSort(i+1, hi);
+}
+
+async function mergeSort(lo, hi) {
+  if (lo >= hi || stopFlag) return;
+  const mid = Math.floor((lo+hi)/2);
+  await mergeSort(lo, mid);
+  await mergeSort(mid+1, hi);
+  const left = arr.slice(lo, mid+1);
+  const right = arr.slice(mid+1, hi+1);
+  let i=0, j=0, k=lo;
+  while (i<left.length && j<right.length && !stopFlag) {
+    comps++;
+    if (left[i] <= right[j]) { arr[k]=left[i]; i++; } else { arr[k]=right[j]; j++; }
+    swapCount++; k++; render(k-1); update(); await delay();
+  }
+  while (i<left.length && !stopFlag) { arr[k]=left[i]; i++; swapCount++; k++; render(k-1); update(); await delay(); }
+  while (j<right.length && !stopFlag) { arr[k]=right[j]; j++; swapCount++; k++; render(k-1); update(); await delay(); }
+}
+
+function isSorted() {
+  for (let i=0; i<arr.length-1; i++) { comps++; if (arr[i]>arr[i+1]) return i; }
+  return -1;
+}
+
+async function bogoSort() {
+  let fail = isSorted();
+  while (fail !== -1 && !stopFlag) {
+    render(-1, fail); update(); await delay();
+    for (let i=arr.length-1; i>0; i--) {
+      const j = Math.floor(Math.random()*(i+1));
+      [arr[i],arr[j]]=[arr[j],arr[i]];
+    }
+    swapCount++;
+    render(); update(); await delay();
+    fail = isSorted();
+  }
+}
+
+async function runSort() {
+  if (running) { stopFlag = true; return; }
+  running = true; stopFlag = false;
+  comps = 0; swapCount = 0; sorted.clear();
+  t0 = performance.now();
+  document.getElementById('run-btn').textContent = 'Stop';
+
+  if (algo === 0) await bubbleSort();
+  else if (algo === 1) await selectionSort();
+  else if (algo === 2) await insertionSort();
+  else if (algo === 3) await quickSort(0, arr.length-1);
+  else if (algo === 4) await mergeSort(0, arr.length-1);
+  else if (algo === 5) await bogoSort();
+
+  if (!stopFlag) { for (let i=0;i<arr.length;i++) sorted.add(i); render(-1); }
+  update(); running = false;
+  document.getElementById('run-btn').textContent = 'Run';
+}
+
+resetBars();
+</script>
+
+</body>
+</html>
